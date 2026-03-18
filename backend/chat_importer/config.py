@@ -1,14 +1,22 @@
 import os
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 
 def _normalize_database_url(raw_url: str) -> str:
     url = raw_url.strip()
 
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+psycopg://", 1)
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
 
     if url.startswith("postgresql://") and "+" not in url.split("://", 1)[0]:
-        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    if url.startswith("postgresql+psycopg://"):
+        parsed = urlparse(url)
+        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        if "sslmode" not in query:
+            query["sslmode"] = "require"
+            url = urlunparse(parsed._replace(query=urlencode(query)))
 
     return url
 

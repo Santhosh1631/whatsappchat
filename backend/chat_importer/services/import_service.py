@@ -1,4 +1,5 @@
 from typing import Dict, List
+from sqlalchemy.exc import OperationalError
 
 from chat_importer.extensions import db
 from chat_importer.models.user import User
@@ -23,6 +24,17 @@ def _get_or_create_users(participants: List[str]) -> Dict[str, User]:
 
 
 def persist_parsed_chat(parsed: Dict[str, object]) -> Dict[str, int]:
+    try:
+        return _persist_parsed_chat_once(parsed)
+    except OperationalError:
+        # Render Postgres can occasionally drop pooled SSL connections.
+        # Reset the current transaction and retry once with a fresh connection.
+        db.session.rollback()
+        db.engine.dispose()
+        return _persist_parsed_chat_once(parsed)
+
+
+def _persist_parsed_chat_once(parsed: Dict[str, object]) -> Dict[str, int]:
     participants = parsed.get("participants", [])
     messages = parsed.get("messages", [])
 

@@ -7,6 +7,10 @@ from .routes.chat_routes import chat_bp
 from .routes.analytics_routes import analytics_bp
 
 
+def _normalize_origin(origin: str) -> str:
+    return origin.strip().rstrip("/")
+
+
 def create_app() -> Flask:
     load_dotenv()
 
@@ -14,8 +18,17 @@ def create_app() -> Flask:
     app.config.from_object(Config)
 
     cors_origins = app.config.get("FRONTEND_ORIGIN", "*")
-    if isinstance(cors_origins, str) and "," in cors_origins:
-        cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    if isinstance(cors_origins, str):
+        if cors_origins.strip() == "*":
+            cors_origins = "*"
+        else:
+            cors_origins = [
+                _normalize_origin(origin)
+                for origin in cors_origins.split(",")
+                if origin.strip()
+            ]
+            if len(cors_origins) == 1:
+                cors_origins = cors_origins[0]
 
     db.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": cors_origins}})

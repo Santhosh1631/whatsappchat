@@ -120,14 +120,41 @@ def parse_whatsapp_chat(raw_text: str) -> Dict[str, object]:
     messages: List[Dict[str, object]] = []
     current: Optional[Dict[str, object]] = None
     parse_errors = 0
+    dt_cache: Dict[str, Optional[datetime]] = {}
+    participants_set = set()
+    media_count = 0
+    system_count = 0
 
     def flush_current():
+        nonlocal media_count, system_count
         if not current:
             return
 
-        current["message"] = current["message"].strip()
-        current["type"] = _detect_type(current["message"], current.get("sender"))
-        messages.append(current.copy())
+        message_text = current["message"].strip()
+        msg_type = _detect_type(message_text, current.get("sender"))
+
+        if MEDIA_RE.match(message_text):
+            message_text = "[Media]"
+        else:
+            message_text = MEDIA_TOKEN_RE.sub("[Media]", message_text)
+
+        if msg_type == "media":
+            media_count += 1
+        elif msg_type == "system":
+            system_count += 1
+
+        sender = current.get("sender")
+        if sender:
+            participants_set.add(sender)
+
+        messages.append(
+            {
+                "timestamp": current["timestamp"],
+                "sender": sender,
+                "message": message_text,
+                "type": msg_type,
+            }
+        )
 
     for raw_line in lines:
         line = raw_line.rstrip("\n")
@@ -137,7 +164,14 @@ def parse_whatsapp_chat(raw_text: str) -> Dict[str, object]:
             if current:
                 flush_current()
 
-            dt = _parse_datetime(match.group("date"), match.group("time"))
+            date_str = match.group("date")
+            time_str = match.group("time")
+            dt_key = f"{date_str}|{time_str}"
+            dt = dt_cache.get(dt_key)
+            if dt_key not in dt_cache:
+                dt = _parse_datetime(date_str, time_str)
+                dt_cache[dt_key] = dt
+
             split = _split_sender_and_message(match.group("body"))
 
             if not dt:
@@ -160,24 +194,10 @@ def parse_whatsapp_chat(raw_text: str) -> Dict[str, object]:
 
     if current:
         flush_current()
-
-    media_count = 0
-    system_count = 0
-    for item in messages:
-        if MEDIA_RE.match(item["message"]):
-            item["message"] = "[Media]"
-        else:
-            item["message"] = MEDIA_TOKEN_RE.sub("[Media]", item["message"])
-
-        if item["type"] == "media":
-            media_count += 1
-        elif item["type"] == "system":
-            system_count += 1
-
-    participants = sorted({m["sender"] for m in messages if m.get("sender")})
+    participants = sorted(participants_set)
 
     return {
-        "messages": sorted(messages, key=lambda x: x["timestamp"]),
+        "messages": messages,
         "participants": participants,
         "stats": {
             "total_messages": len(messages),

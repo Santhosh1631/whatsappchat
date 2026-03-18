@@ -7,20 +7,11 @@ from chat_importer.models.message import Message
 
 
 def _get_or_create_users(participants: List[str]) -> Dict[str, User]:
-    user_map: Dict[str, User] = {}
-
-    for name in participants:
-        existing = User.query.filter_by(name=name).first()
-        if existing:
-            user_map[name] = existing
-            continue
-
-        created = User(name=name)
-        db.session.add(created)
+    created_users = [User(name=name) for name in participants]
+    if created_users:
+        db.session.add_all(created_users)
         db.session.flush()
-        user_map[name] = created
-
-    return user_map
+    return {user.name: user for user in created_users}
 
 
 def persist_parsed_chat(parsed: Dict[str, object]) -> Dict[str, int]:

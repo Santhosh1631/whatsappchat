@@ -99,7 +99,12 @@ function ChatPage() {
       });
       setBackendError('');
     } catch (error) {
-      setBackendError('Backend is unreachable. Start Flask on port 5000 and check database configuration.');
+      const serverMessage = error?.response?.data?.error;
+      const status = error?.response?.status;
+      const fallback = error?.message || 'Unknown error';
+      setBackendError(
+        `Backend request failed${status ? ` (${status})` : ''}: ${serverMessage || fallback}`
+      );
     } finally {
       setLoading(false);
     }

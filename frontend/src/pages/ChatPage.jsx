@@ -13,6 +13,7 @@ import {
   fetchUsers,
 } from '../services/api';
 
+const INITIAL_PAGE_SIZE = 800;
 const PAGE_SIZE = 5000;
 
 function inferMyUserId(users, messages) {
@@ -83,7 +84,7 @@ function ChatPage() {
     try {
       const [u, firstPage] = await Promise.all([
         fetchUsers(),
-        fetchMessages('', PAGE_SIZE, 0),
+        fetchMessages('', INITIAL_PAGE_SIZE, 0),
       ]);
 
       const firstRows = firstPage.messages || [];

@@ -24,9 +24,13 @@ function ChatWindow({ messages, search, myUserId, loading, loadingMore }) {
 
   return (
     <section className="chat-window">
-      <div className="chat-header">Conversation ({filtered.length} messages)</div>
+      <div className="chat-header">
+        {loading ? 'Conversation (loading...)' : `Conversation (${filtered.length} messages)`}
+      </div>
       <div className="chat-performance-hint">
-        Showing {filtered.length} messages{loadingMore ? ' (loading more...)' : ''}.
+        {loading
+          ? 'Preparing first messages...'
+          : `Showing ${filtered.length} messages${loadingMore ? ' (loading more...)' : ''}.`}
       </div>
       <div className="chat-messages">
         {loading ? (

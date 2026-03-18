@@ -13,6 +13,9 @@ class Config:
     use_sqlite_fallback = os.getenv("USE_SQLITE_FALLBACK", "true").lower() == "true"
     database_url = os.getenv("DATABASE_URL", "").strip()
 
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
     if database_url:
         SQLALCHEMY_DATABASE_URI = database_url
     elif use_sqlite_fallback and not mysql_password:

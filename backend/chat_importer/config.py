@@ -1,6 +1,18 @@
 import os
 
 
+def _normalize_database_url(raw_url: str) -> str:
+    url = raw_url.strip()
+
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+
+    if url.startswith("postgresql://") and "+" not in url.split("://", 1)[0]:
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    return url
+
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
     FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
@@ -11,10 +23,7 @@ class Config:
     mysql_port = os.getenv("MYSQL_PORT", "3306")
     mysql_db = os.getenv("MYSQL_DB", "chat_importer")
     use_sqlite_fallback = os.getenv("USE_SQLITE_FALLBACK", "true").lower() == "true"
-    database_url = os.getenv("DATABASE_URL", "").strip()
-
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    database_url = _normalize_database_url(os.getenv("DATABASE_URL", ""))
 
     if database_url:
         SQLALCHEMY_DATABASE_URI = database_url

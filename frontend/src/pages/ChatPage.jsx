@@ -52,9 +52,10 @@ function ChatPage() {
   const [sentiment, setSentiment] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [totalMessages, setTotalMessages] = useState(0);
 
-  const fetchAllMessages = async (searchTerm = '') => {
+  const fetchAllMessages = async (searchTerm = '', onChunk) => {
     let offset = 0;
     let total = 0;
     const allRows = [];
@@ -64,6 +65,9 @@ function ChatPage() {
       const chunk = page.messages || [];
       total = page.total || 0;
       allRows.push(...chunk);
+      if (onChunk) {
+        onChunk(chunk, allRows.length, total);
+      }
       offset += chunk.length;
 
       if (chunk.length === 0) {
@@ -77,27 +81,53 @@ function ChatPage() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [u, a, s, t, all] = await Promise.all([
+      const [u, firstPage] = await Promise.all([
         fetchUsers(),
-        fetchAnalytics(),
-        fetchSummary(),
-        fetchSentiment(),
-        fetchAllMessages(''),
+        fetchMessages('', PAGE_SIZE, 0),
       ]);
 
+      const firstRows = firstPage.messages || [];
+      const total = firstPage.total || firstRows.length;
+
       setUsers(u);
-      setMessages(all.messages || []);
-      setTotalMessages(all.total || 0);
-      setAnalytics(a);
-      setSummary(s.summary);
-      setSentiment(t);
+      setMessages(firstRows);
+      setTotalMessages(total);
       setMyUserId((prev) => {
         if (prev && u.some((item) => item.id === prev)) {
           return prev;
         }
-        return inferMyUserId(u, all.messages || []);
+        return inferMyUserId(u, firstRows);
       });
       setBackendError('');
+
+      if (firstRows.length < total) {
+        setLoadingMore(true);
+        fetchAllMessages('', (chunk, loadedCount) => {
+          if (loadedCount <= firstRows.length || chunk.length === 0) {
+            return;
+          }
+          setMessages((prev) => {
+            const seen = new Set(prev.map((m) => m.id));
+            const additions = chunk.filter((m) => !seen.has(m.id));
+            return additions.length ? [...prev, ...additions] : prev;
+          });
+        })
+          .then((all) => {
+            setMessages(all.messages || []);
+            setTotalMessages(all.total || 0);
+          })
+          .finally(() => setLoadingMore(false));
+      }
+
+      Promise.all([fetchAnalytics(), fetchSummary(), fetchSentiment()])
+        .then(([a, s, t]) => {
+          setAnalytics(a);
+          setSummary(s.summary);
+          setSentiment(t);
+        })
+        .catch(() => {
+          // Keep chat usable even if analytics endpoints are slow.
+        });
     } catch (error) {
       const serverMessage = error?.response?.data?.error;
       const status = error?.response?.status;
@@ -168,8 +198,12 @@ function ChatPage() {
           search={search}
           myUserId={myUserId}
           loading={loading}
+          loadingMore={loadingMore}
         />
-        <div className="pagination-info">Loaded {messages.length} messages of {totalMessages}</div>
+        <div className="pagination-info">
+          Loaded {messages.length} messages of {totalMessages}
+          {loadingMore ? ' (loading more...)' : ''}
+        </div>
       </section>
 
       <section className="right-column">

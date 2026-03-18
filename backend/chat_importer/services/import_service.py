@@ -40,26 +40,30 @@ def _persist_parsed_chat_once(parsed: Dict[str, object]) -> Dict[str, int]:
 
     # One uploaded file is treated as one complete conversation thread.
     # Replace prior imported data to avoid mixing multiple histories.
-    Message.query.delete()
-    User.query.delete()
+    Message.query.delete(synchronize_session=False)
+    User.query.delete(synchronize_session=False)
     db.session.flush()
 
     user_map = _get_or_create_users(participants)
 
     inserted_messages = 0
+    message_rows = []
     for item in messages:
         sender_name = item.get("sender")
         sender = user_map.get(sender_name) if sender_name else None
-
-        row = Message(
-            sender_id=sender.id if sender else None,
-            message=item["message"],
-            timestamp=item["timestamp"],
-            type=item.get("type", "text"),
-            is_imported=True,
+        message_rows.append(
+            {
+                "sender_id": sender.id if sender else None,
+                "message": item["message"],
+                "timestamp": item["timestamp"],
+                "type": item.get("type", "text"),
+                "is_imported": True,
+            }
         )
-        db.session.add(row)
         inserted_messages += 1
+
+    if message_rows:
+        db.session.bulk_insert_mappings(Message, message_rows)
 
     db.session.commit()
 

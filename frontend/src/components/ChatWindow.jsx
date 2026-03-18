@@ -7,7 +7,7 @@ function dayLabel(timestamp) {
   return dt.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function ChatWindow({ messages, search, myUserId, loading }) {
+function ChatWindow({ messages, search, myUserId, loading, loadingMore }) {
   const normalizedSearch = search.trim().toLowerCase();
 
   const filtered = useMemo(() => {
@@ -26,7 +26,7 @@ function ChatWindow({ messages, search, myUserId, loading }) {
     <section className="chat-window">
       <div className="chat-header">Conversation ({filtered.length} messages)</div>
       <div className="chat-performance-hint">
-        Showing all {filtered.length} messages.
+        Showing {filtered.length} messages{loadingMore ? ' (loading more...)' : ''}.
       </div>
       <div className="chat-messages">
         {loading ? (

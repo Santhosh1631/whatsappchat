@@ -165,57 +165,69 @@ function ChatPage() {
   };
 
   return (
-    <main className="app-shell">
-      <div className="top-glow" />
+    <>
+      <main className="app-shell">
+        <div className="top-glow" />
 
-      <section className="left-column">
-        <UploadPanel onUploaded={loadAll} />
-        <Sidebar users={users} messages={messages} myUserId={myUserId} onSetMyUserId={setMyUserId} />
-      </section>
+        <section className="left-column">
+          <UploadPanel onUploaded={loadAll} />
+          <Sidebar users={users} messages={messages} myUserId={myUserId} onSetMyUserId={setMyUserId} />
+        </section>
 
-      <section className="center-column">
-        <header className="conversation-title">
-          <span>{selectedName}</span>
-          {showMySelector && (
-            <label className="identity-picker">
-              You:
-              <select
-                value={myUserId || ''}
-                onChange={(e) => setMyUserId(Number(e.target.value))}
-              >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </header>
-        {backendError && <div className="error-banner">{backendError}</div>}
-        <SearchBar value={search} onChange={setSearch} />
-        <ChatWindow
-          messages={messages}
-          search={search}
-          myUserId={myUserId}
-          loading={loading}
-          loadingMore={loadingMore}
-        />
-        <div className="pagination-info">
-          Loaded {messages.length} messages of {totalMessages}
-          {loadingMore ? ' (loading more...)' : ''}
-        </div>
-      </section>
+        <section className="center-column">
+          <header className="conversation-title">
+            <span>{selectedName}</span>
+            {showMySelector && (
+              <label className="identity-picker">
+                You:
+                <select
+                  value={myUserId || ''}
+                  onChange={(e) => setMyUserId(Number(e.target.value))}
+                >
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </header>
+          {backendError && <div className="error-banner">{backendError}</div>}
+          <SearchBar value={search} onChange={setSearch} />
+          <ChatWindow
+            messages={messages}
+            search={search}
+            myUserId={myUserId}
+            loading={loading}
+            loadingMore={loadingMore}
+          />
+          <div className="pagination-info">
+            Loaded {messages.length} messages of {totalMessages}
+            {loadingMore ? ' (loading more...)' : ''}
+          </div>
+        </section>
 
-      <section className="right-column">
-        <AnalyticsPanel
-          analytics={analytics}
-          summary={summary}
-          sentiment={sentiment}
-          onExport={handleExport}
-        />
-      </section>
-    </main>
+        <section className="right-column">
+          <AnalyticsPanel
+            analytics={analytics}
+            summary={summary}
+            sentiment={sentiment}
+            onExport={handleExport}
+          />
+        </section>
+      </main>
+      <footer className="app-footer">
+        Copyright reserved by{' '}
+        <a
+          href="https://www.linkedin.com/in/santhosh-kumar-r-187849258/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Santhosh Kumar R
+        </a>
+      </footer>
+    </>
   );
 }
 

@@ -141,9 +141,10 @@ function ChatPage() {
     }
   };
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  // Messages will only load after file upload via UploadPanel onUploaded callback
+  // useEffect(() => {
+  //   loadAll();
+  // }, []);
 
   const selectedName = useMemo(() => 'WhatsApp Conversation', []);
 
